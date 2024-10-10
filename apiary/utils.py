@@ -1,5 +1,6 @@
 """This module defines various utility classes and functions for the CoopHive simulator."""
 
+import csv
 import json
 import logging
 import os
@@ -7,8 +8,12 @@ import uuid
 from typing import TypedDict, Union
 
 import colorlog
+import matplotlib.pyplot as plt
+import pandas as pd
 import readwrite as rw
 from dotenv import load_dotenv
+
+load_dotenv(override=True)
 
 
 def template(input: str, variables: dict) -> None:
@@ -72,7 +77,6 @@ def set_env_variables(config: dict):
     to environment variables. Existing environment variables take precedence over
     values in the config.
     """
-    load_dotenv(override=True)
 
     def get_keys(d, parent_key=""):
         """Recursively flatten dictionary keys."""
@@ -149,7 +153,9 @@ def create_token(token_data: list) -> Token:
     address = token_data[1]
 
     if token_standard == "ERC20":
-        return {"tokenStandard": "ERC20", "address": address, "amt": token_data[2]}
+        amt = token_data[2]
+        os.environ["VALUATION_ESTIMATION"] = str(amt)
+        return {"tokenStandard": "ERC20", "address": address, "amt": amt}
     elif token_standard == "ERC721":
         return {"tokenStandard": "ERC721", "address": address, "id": token_data[2]}
     else:
@@ -177,3 +183,62 @@ def parse_initial_offer(job_path, token_data):
         "initial": True,
         "data": data,
     }
+
+
+def add_float_to_csv(value):
+    """Append a float value to a CSV file."""
+    file_path = "apiary_output/negotiation.csv"
+    file_exists = os.path.isfile(file_path)
+
+    # Open the file in append mode if it exists, otherwise create a new file
+    with open(file_path, mode="a", newline="") as file:
+        writer = csv.writer(file)
+        if not file_exists:
+            # Write the header if the file is being created
+            writer.writerow(["Amount"])
+        # Append the current float value to the file
+        writer.writerow([value])
+
+
+def plot_negotiation():
+    """Plot negotiation offers from a CSV file."""
+    file_path = "apiary_output/negotiation.csv"
+
+    df = pd.read_csv(file_path)
+
+    odd_entries = df.iloc[::2]
+    even_entries = df.iloc[1::2]
+
+    plt.figure(figsize=(13, 5))
+    plt.scatter(df.index, df, color="b", s=64, label="_nolegend_")
+
+    plt.plot(
+        odd_entries.index,
+        odd_entries,
+        linestyle="--",
+        color="g",
+        linewidth=1.5,
+        label="Seller Offers",
+    )
+    plt.plot(
+        even_entries.index,
+        even_entries,
+        linestyle="--",
+        color="m",
+        linewidth=1.5,
+        label="Buyer Offers",
+    )
+
+    plt.title("Negotiation Rounds vs Offers", fontsize=16, fontweight="bold")
+    plt.xlabel("Negotiation Round", fontsize=12)
+    plt.ylabel("Offer", fontsize=12)
+    plt.grid(True, linestyle="--", linewidth=0.5)
+
+    plt.xticks(df.index)
+
+    plt.legend()
+
+    plt.tight_layout()
+
+    plt.savefig("apiary_output/negotiation.png")
+    plt.close()

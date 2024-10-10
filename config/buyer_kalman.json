@@ -1,0 +1,11 @@
+{
+    "private_key": "0202ea5001ba9d11e8fecb4a3a943fbaa4a1068821e35533bd2161e76d333811",
+    "public_key": "0x002189E2F82ac8FBF19e2Dc279d19E07eCE12cfb",
+    "inference_endpoint": {
+        "port": 8001,
+        "host": "localhost"
+    },
+    "valuation_variance": 15,
+    "valuation_measurement_variance": 10,
+    "absolute_tolerance": 3
+}

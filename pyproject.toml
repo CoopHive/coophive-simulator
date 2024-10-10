@@ -30,7 +30,8 @@ dependencies = [
     "lighthouseweb3>=0.1.0,<0.2.0",
     "readwrite>=0.6.0, <1.0",
     "python-dotenv>=1.0.0,<2.0",
-    "ipykernel>=6.29.0,<7.0.0"
+    "ipykernel>=6.29.0,<7.0.0",
+    "matplotlib>=3.9"
 ]
 packages = [{include = "apiary"}]
 

@@ -10,9 +10,12 @@ def get_agent():
     agent_name = os.getenv("AGENT_NAME")
 
     agents = {
+        # Buyers
         "buyer_naive": buyer.NaiveBuyer,
+        "buyer_kalman": buyer.KalmanBuyer,
+        # Sellers
         "seller_naive": seller.NaiveSeller,
-        # Add more agents as needed
+        "seller_kalman": seller.KalmanSeller,
     }
 
     agent_class = agents.get(agent_name)

@@ -258,3 +258,5 @@ bun.lockb
 .vscode
 package-lock.json
 results/
+*.csv
+*.png

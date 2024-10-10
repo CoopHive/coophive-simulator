@@ -8,6 +8,8 @@ from abc import ABC, abstractmethod
 from dotenv import load_dotenv
 from lighthouseweb3 import Lighthouse
 
+from apiary import apiars
+
 load_dotenv(override=True)
 
 
@@ -100,6 +102,30 @@ class Agent(ABC):
         logging.info(f"https://gateway.lighthouse.storage/ipfs/{query}")
         return query
 
+    def _offer_to_buy_attestation(self, input_message, output_message):
+        query = self._get_query(input_message)
+
+        token_standard = str(input_message["data"]["token"]["tokenStandard"])
+        token_address = str(input_message["data"]["token"]["address"])
+
+        if token_standard == "ERC20":
+            amount = int(input_message["data"]["token"]["amt"])
+            statement_uid = apiars.erc20.make_buy_statement(
+                token_address, amount, query, self.private_key
+            )
+
+        elif token_standard == "ERC721":
+            token_id = int(input_message["data"]["token"]["id"])
+            statement_uid = apiars.erc721.make_buy_statement(
+                token_address, token_id, query, self.private_key
+            )
+        else:
+            raise ValueError(f"Unsupported token standard: {token_standard}")
+
+        output_message["data"]["_tag"] = "buyAttest"
+        output_message["data"]["attestation"] = statement_uid
+        return output_message
+
     def _job_cid_to_result_cid(self, statement_uid: str, job_cid: str):
         """Download Dockerfile from job_cid, run the job, upload the results to IPFS and return the result_cid."""
         try:
@@ -151,6 +177,39 @@ class Agent(ABC):
 
         result_cid = response["data"]["Hash"]
         return result_cid
+
+    def _buy_attestation_to_sell_attestation(self, input_message, output_message):
+        statement_uid = input_message["data"]["attestation"]
+
+        token_standard = str(input_message["data"]["token"]["tokenStandard"])
+
+        if token_standard == "ERC20":
+            (token, quantity, arbiter, job_cid) = apiars.erc20.get_buy_statement(
+                statement_uid, self.private_key
+            )
+
+            result_cid = self._job_cid_to_result_cid(statement_uid, job_cid)
+
+            sell_uid = apiars.erc20.submit_and_collect(
+                statement_uid, result_cid, self.private_key
+            )
+        elif token_standard == "ERC721":
+            (token, token_id, arbiter, job_cid) = apiars.erc721.get_buy_statement(
+                statement_uid, self.private_key
+            )
+
+            result_cid = self._job_cid_to_result_cid(statement_uid, job_cid)
+
+            sell_uid = apiars.erc721.submit_and_collect(
+                statement_uid, result_cid, self.private_key
+            )
+        else:
+            raise ValueError(f"Unsupported token standard: {token_standard}")
+
+        output_message["data"]["_tag"] = "sellAttest"
+        output_message["data"]["result"] = result_cid
+        output_message["data"]["attestation"] = sell_uid
+        return output_message
 
     def _get_result_from_result_cid(self, result_cid):
         try:

@@ -57,10 +57,10 @@ def start_buy(config_path: str, job_path: str, token_data: str):
 
     utils.load_configuration(config_path)
 
-    inference.start_inference_endpoint()
-
     initial_offer = utils.parse_initial_offer(job_path, token_data)
     logging.info(f"Initial Offer: {initial_offer}")
+
+    inference.start_inference_endpoint()
 
     external_services.start_messaging_client(initial_offer)
 
